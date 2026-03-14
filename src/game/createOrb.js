@@ -1,24 +1,37 @@
 import * as THREE from 'three'
 
-const COLORS = [0x00ffff, 0xff00ff, 0xffff00, 0x00ff88, 0xff6600]
-
-const POINT_VALUES = {
-  0x00ffff: 1, // Cian
-  0xff00ff: 2, // Magenta
-  0x00ff88: 3, // Esmeralda
-  0xffff00: 5, // Amarillo
-  0xff6600: -2 // Naranja
-}
+export const ORB_TYPES = [
+  { type: 'BLUE', color: 0x00aaff, points: 1, weight: 60 },
+  { type: 'RED', color: 0xff3333, points: 2, weight: 8 },
+  { type: 'GREEN', color: 0x33ff33, points: 5, weight: 8 },
+  { type: 'YELLOW', color: 0xffff33, points: 3, weight: 8 },
+  { type: 'ORANGE', color: 0xffaa00, points: 0, weight: 4 }, // gato
+  { type: 'PURPLE', color: 0xaa66ff, points: -5, weight: 10 }, // facturas
+  { type: 'WHITE', color: 0xffffff, points: 0, weight: 10 }, // fantasma
+]
 
 export function createOrb() {
-  const color = COLORS[Math.floor(Math.random() * COLORS.length)]
-  const points = POINT_VALUES[color]
+  // Selección por peso
+  const totalWeight = ORB_TYPES.reduce((acc, obj) => acc + obj.weight, 0)
+  let random = Math.random() * totalWeight
+  let selected = ORB_TYPES[0]
 
-  // Grupo contenedor para el orbe
+  for (const orbType of ORB_TYPES) {
+    if (random < orbType.weight) {
+      selected = orbType
+      break
+    }
+    random -= orbType.weight
+  }
+
+  const { type, color, points } = selected
+
+  // Grupo contenedor
   const group = new THREE.Group()
+  group.userData.type = type
   group.userData.points = points
 
-  // Esfera visual principal
+  // Esfera visual
   const geometry = new THREE.SphereGeometry(0.08, 32, 32)
   const material = new THREE.MeshStandardMaterial({
     color,
@@ -32,7 +45,7 @@ export function createOrb() {
   const orbMesh = new THREE.Mesh(geometry, material)
   group.add(orbMesh)
 
-  // Halo exterior (glow effect)
+  // Glow
   const glowGeo = new THREE.SphereGeometry(0.13, 32, 32)
   const glowMat = new THREE.MeshBasicMaterial({
     color,
@@ -43,18 +56,14 @@ export function createOrb() {
   const glow = new THREE.Mesh(glowGeo, glowMat)
   group.add(glow)
 
-  // AREA DE IMPACTO INVISIBLE (Más grande para facilitar el click)
-  const hitGeo = new THREE.SphereGeometry(0.20, 16, 16)
-  const hitMat = new THREE.MeshBasicMaterial({ 
-    visible: false, 
-    transparent: true, 
-    opacity: 0 
-  })
+  // Hitbox invisible
+  const hitGeo = new THREE.SphereGeometry(0.25, 16, 16)
+  const hitMat = new THREE.MeshBasicMaterial({ visible: false, transparent: true, opacity: 0 })
   const hitMesh = new THREE.Mesh(hitGeo, hitMat)
   hitMesh.name = "hitbox"
   group.add(hitMesh)
 
-  // Luz puntual
+  // Luz
   const light = new THREE.PointLight(color, 1.5, 0.5)
   group.add(light)
 

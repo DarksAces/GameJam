@@ -59,7 +59,17 @@ export default function App() {
   const [score, setScore] = useState(0)
   const [timeLeft, setTimeLeft] = useState(120)
   const [isMatchStarted, setIsMatchStarted] = useState(false)
+  const [activeMessage, setActiveMessage] = useState("")
+  const [activeEffect, setActiveEffect] = useState(null) // 'green' | 'shake'
+  const [catMinigame, setCatMinigame] = useState(false)
+  
   const scoreRef = useRef(0)
+  const multiplierRef = useRef(1)
+  const arState = useRef({
+    paranoia: false,
+    speedMult: 1,
+    spawnRateMult: 1
+  })
 
   // Check for existing session
   useEffect(() => {
@@ -95,18 +105,55 @@ export default function App() {
     stopAmbient()
     playAmbient()
     await initAR(containerRef.current, {
-      onCapture: (points) => {
+      onCapture: (points, type) => {
+        // Lógica de puntos básica
         setScore(s => {
-          const next = Math.max(0, s + (points || 1))
+          const next = Math.max(0, s + (points * (multiplierRef.current || 1)))
           scoreRef.current = next
           return next
         })
+
+        // Lógica de Poderes
+        if (type === 'RED') {
+          setActiveMessage("Que seas paranoide no quiere decir que no te estén persiguiendo")
+          arState.current.paranoia = true
+          setTimeout(() => arState.current.paranoia = false, 5000)
+        } else if (type === 'GREEN') {
+          setActiveMessage("Modo munchies activado")
+          setActiveEffect('green')
+          arState.current.speedMult = 0.5
+          setTimeout(() => { setActiveEffect(null); arState.current.speedMult = 1 }, 5000)
+        } else if (type === 'YELLOW') {
+          setActiveMessage("Sobredosis de cafeína")
+          setActiveEffect('shake')
+          arState.current.speedMult = 2
+          arState.current.spawnRateMult = 2
+          multiplierRef.current = 2
+          setTimeout(() => { 
+            setActiveEffect(null)
+            arState.current.speedMult = 1
+            arState.current.spawnRateMult = 1
+            multiplierRef.current = 1
+          }, 5000)
+        } else if (type === 'ORANGE') {
+          setActiveMessage("Tu gato exige atención")
+          setCatMinigame(true)
+        } else if (type === 'WHITE') {
+          setActiveMessage("Booo! Un fantasma")
+        } else if (type === 'PURPLE') {
+          setActiveMessage("¡Malditas facturas! -5 puntos")
+        }
+
+        // Limpiar mensaje tras 3 segundos
+        if (type !== 'BLUE') {
+          setTimeout(() => setActiveMessage(""), 3000)
+        }
       },
       onTargetFound: () => {
         console.log("📱 App.jsx: Target Found recibido! Iniciando cronómetro.");
         setIsMatchStarted(true);
       }
-    })
+    }, arState.current) // Pasamos arState como segundo argumento
     setGameState('playing')
   }, [])
 
@@ -143,8 +190,27 @@ export default function App() {
 
   return (
     <>
+    <div className={`app-container ${activeEffect === 'green' ? 'effect-green' : ''} ${activeEffect === 'shake' ? 'shake' : ''}`}>
       {/* Canvas de AR — siempre montado para que MindAR tenga el div */}
       <div ref={containerRef} id="ar-container" />
+
+      {/* Mensajes de Poder */}
+      {activeMessage && <div className="power-message">{activeMessage}</div>}
+
+      {/* Minijuego del Gato */}
+      {catMinigame && (
+        <div className="screen" style={{ zIndex: 1000, background: 'rgba(0,0,0,0.9)' }}>
+          <h1>🐱 ¡EL GATO QUIERE JUGAR!</h1>
+          <p>Toca al gato rápido para volver al juego</p>
+          <div 
+            className="btn" 
+            style={{ fontSize: '4rem', padding: '2rem' }}
+            onClick={() => setCatMinigame(false)}
+          >
+            🐈
+          </div>
+        </div>
+      )}
 
       {/* UI overlay */}
       {gameState === 'menu' && <MenuScreen onStart={handleInitiate} />}
@@ -181,6 +247,7 @@ export default function App() {
       {showLeaderboard && (
         <Leaderboard onClose={() => setShowLeaderboard(false)} />
       )}
+    </div>
     </>
   )
 }
