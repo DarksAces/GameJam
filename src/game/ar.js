@@ -38,9 +38,9 @@ export async function initAR(container, { onCapture }) {
     
     // Posiciones aleatorias relativas al marcador
     orb.position.set(
-      (Math.random() - 0.5) * 1.5,
-      (Math.random() - 0.5) * 1.5,
-      Math.random() * 0.5
+      (Math.random() - 0.5) * 3.0,
+      (Math.random() - 0.5) * 3.0,
+      Math.random() * 1.5 + 0.5
     )
     
     orb.userData.basePos = orb.position.clone()
@@ -107,7 +107,7 @@ export async function initAR(container, { onCapture }) {
     
     orbs.forEach((orb) => {
       // Animación suave
-      orb.position.y = orb.userData.basePos.y + Math.sin(time * 0.003 + orb.userData.phase) * 0.05
+      orb.position.y = orb.userData.basePos.y + Math.sin(time * 0.003 + orb.userData.phase) * 0.1
       orb.rotation.y += 0.02
     })
     
