@@ -43,7 +43,7 @@ body {
   padding: 2rem 2.5rem;
   position: relative;
   z-index: 100;
-  pointer-events: auto;
+  pointer-events: none; /* ← Cambiado */
   width: 100%;
 }
 
@@ -58,6 +58,7 @@ body {
   box-shadow:
     0 0 8px var(--cyan),
     inset 0 0 8px rgba(0, 255, 255, 0.05);
+  pointer-events: auto; /* ← Asegurar que la caja sea clicable si hace falta */
 }
 
 .hud-box.danger {
