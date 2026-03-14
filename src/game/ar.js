@@ -7,9 +7,14 @@ let mindarThree = null
 let orbs = []
 let callbacks = {}
 let spawnInterval = null
+let isRunning = false
+let targetFoundTriggered = false
 
-export async function initAR(container, { onCapture }) {
+export async function initAR(container, { onCapture, onTargetFound }) {
   callbacks.onCapture = onCapture
+  callbacks.onTargetFound = onTargetFound
+  isRunning = true
+  targetFoundTriggered = false
 
   mindarThree = new MindARThree({
     container
@@ -23,82 +28,115 @@ export async function initAR(container, { onCapture }) {
   dirLight.position.set(0, 1, 1)
   scene.add(dirLight)
 
-  const anchor = mindarThree.addAnchor(1)  // Frente para face tracking
+  // Anchor 168 (Entre los ojos)
+  const anchor = mindarThree.addAnchor(168)
 
-  // --- Spawn de orbes ---
   const spawnOrb = () => {
-    if (orbs.length >= 6) return
-    const orb = createOrb()
-    orb.userData.points = orb.userData.points || 1  // Asegura que tenga puntos definidos
-    // Posiciones aleatorias alrededor del target
-    orb.position.set(
-      (Math.random() - 0.5) * 1.2,
-      Math.random() * 0.8,
-      (Math.random() - 0.5) * 0.4
+    if (!isRunning || orbs.length >= 25) return 
+    const orbGroup = createOrb()
+    
+    // Spawn siempre frontal y visible
+    orbGroup.position.set(
+      (Math.random() - 0.5) * 2.5,
+      (Math.random() - 0.5) * 2.5,
+      Math.random() * 0.4 + 0.15
     )
-    orb.userData.baseY = orb.position.y
-    orb.userData.phase = Math.random() * Math.PI * 2 // fase aleatoria para el bob
-    anchor.group.add(orb)
-    orbs.push(orb)
+    orbGroup.userData.baseY = orbGroup.position.y
+    orbGroup.userData.phase = Math.random() * Math.PI * 2
+    
+    anchor.group.add(orbGroup)
+    orbs.push(orbGroup)
     playSpawn()
   }
 
-  spawnOrb()
-  spawnInterval = setInterval(spawnOrb, 2500)
+  const handleTargetFound = () => {
+    if (targetFoundTriggered) return
+    console.log('🎯 CARA DETECTADA - Iniciando juego');
+    targetFoundTriggered = true
+    callbacks.onTargetFound?.()
+    if (!spawnInterval && isRunning) {
+      spawnOrb()
+      spawnInterval = setInterval(spawnOrb, 1800)
+    }
+  }
 
-  // --- Tap / Click para capturar ---
+  anchor.onTargetFound = () => handleTargetFound();
+
+  // --- Raycaster mejorado ---
   const raycaster = new THREE.Raycaster()
+  const mouse = new THREE.Vector2()
 
-  const handleTap = (e) => {
-    const touch = e.touches ? e.touches[0] : e
-    const rect = container.getBoundingClientRect()
-    const x = ((touch.clientX - rect.left) / rect.width) * 2 - 1
-    const y = -((touch.clientY - rect.top) / rect.height) * 2 + 1
+  const handlePointer = (e) => {
+    if (!isRunning || !targetFoundTriggered) return
+    
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY
 
-    raycaster.setFromCamera({ x, y }, camera)
-    const hits = raycaster.intersectObjects(orbs, true)
+    mouse.x = (clientX / window.innerWidth) * 2 - 1
+    mouse.y = -(clientY / window.innerHeight) * 2 + 1
+
+    raycaster.setFromCamera(mouse, camera)
+    
+    // Intersectamos con el grupo de anclaje (que contiene orbes)
+    const hits = raycaster.intersectObjects(anchor.group.children, true)
 
     if (hits.length > 0) {
-      // Sube al padre (el orbe) si el hit fue en el halo hijo
-      let target = hits[0].object
-      while (target.parent && !orbs.includes(target)) {
-        target = target.parent
+      let hitObject = hits[0].object
+      
+      // Subimos hasta encontrar el grupo que está en el array 'orbs'
+      let targetOrb = hitObject
+      while (targetOrb.parent && !orbs.includes(targetOrb)) {
+        targetOrb = targetOrb.parent
       }
-      const idx = orbs.indexOf(target)
+
+      const idx = orbs.indexOf(targetOrb)
       if (idx > -1) {
-        console.log('🎯 Orbe capturado! Puntos:', target.userData.points)
-        anchor.group.remove(target)
+        console.log(`✅ CAPTURADO: ${targetOrb.userData.points} pts`);
+        anchor.group.remove(targetOrb)
         orbs.splice(idx, 1)
         playCapture()
-        console.log('📞 Llamando callback con puntos:', target.userData.points)
-        callbacks.onCapture?.(target.userData.points)  // ← Ahora SÍ pasa los puntos
+        callbacks.onCapture?.(targetOrb.userData.points)
       }
     }
   }
 
-  container.addEventListener('click', handleTap)
-  container.addEventListener('touchstart', handleTap, { passive: true })
+  window.addEventListener('mousedown', handlePointer)
+  window.addEventListener('touchstart', handlePointer, { passive: true })
 
-  // --- Loop de animación ---
   await mindarThree.start()
 
   renderer.setAnimationLoop((time) => {
-    orbs.forEach((orb) => {
-      // Bobbing suave
-      orb.position.y = orb.userData.baseY + Math.sin(time * 0.002 + orb.userData.phase) * 0.05
-      // Rotación lenta
-      orb.rotation.y += 0.015
-      orb.rotation.x += 0.005
-    })
+    if (!isRunning) return
+    
+    // Fallback de detección por visibilidad
+    if (anchor.group.visible && !targetFoundTriggered) {
+      handleTargetFound();
+    }
+
+    if (targetFoundTriggered) {
+      orbs.forEach((orb) => {
+        // Bobbing
+        orb.position.y = orb.userData.baseY + Math.sin(time * 0.002 + orb.userData.phase) * 0.05
+        orb.rotation.y += 0.02
+      })
+    }
     renderer.render(scene, camera)
   })
+
+  callbacks.cleanup = () => {
+    window.removeEventListener('mousedown', handlePointer)
+    window.removeEventListener('touchstart', handlePointer)
+    isRunning = false
+    clearInterval(spawnInterval)
+    spawnInterval = null
+  }
 }
 
 export function stopAR() {
-  clearInterval(spawnInterval)
+  if (callbacks.cleanup) callbacks.cleanup()
   if (mindarThree) {
     mindarThree.stop()
-    mindarThree.renderer.setAnimationLoop(null)
+    if (mindarThree.renderer) mindarThree.renderer.setAnimationLoop(null)
     mindarThree = null
   }
   orbs = []

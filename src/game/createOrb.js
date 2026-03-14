@@ -10,19 +10,15 @@ const POINT_VALUES = {
   0xff6600: -2 // Naranja
 }
 
-const LABELS = {
-  0x00ffff: '+1',
-  0xff00ff: 'SUEÑO',
-  0x00ff88: 'FOCO',
-  0xffff00: 'EXITO',
-  0xff6600: 'TDHA'
-}
-
 export function createOrb() {
   const color = COLORS[Math.floor(Math.random() * COLORS.length)]
   const points = POINT_VALUES[color]
 
-  // Esfera principal
+  // Grupo contenedor para el orbe
+  const group = new THREE.Group()
+  group.userData.points = points
+
+  // Esfera visual principal
   const geometry = new THREE.SphereGeometry(0.08, 32, 32)
   const material = new THREE.MeshStandardMaterial({
     color,
@@ -33,8 +29,8 @@ export function createOrb() {
     transparent: true,
     opacity: 0.95,
   })
-  const orb = new THREE.Mesh(geometry, material)
-  orb.userData.points = points
+  const orbMesh = new THREE.Mesh(geometry, material)
+  group.add(orbMesh)
 
   // Halo exterior (glow effect)
   const glowGeo = new THREE.SphereGeometry(0.13, 32, 32)
@@ -45,11 +41,22 @@ export function createOrb() {
     side: THREE.BackSide,
   })
   const glow = new THREE.Mesh(glowGeo, glowMat)
-  orb.add(glow)
+  group.add(glow)
 
-  // Luz puntual para iluminar alrededor del orbe
+  // AREA DE IMPACTO INVISIBLE (Más grande para facilitar el click)
+  const hitGeo = new THREE.SphereGeometry(0.20, 16, 16)
+  const hitMat = new THREE.MeshBasicMaterial({ 
+    visible: false, 
+    transparent: true, 
+    opacity: 0 
+  })
+  const hitMesh = new THREE.Mesh(hitGeo, hitMat)
+  hitMesh.name = "hitbox"
+  group.add(hitMesh)
+
+  // Luz puntual
   const light = new THREE.PointLight(color, 1.5, 0.5)
-  orb.add(light)
+  group.add(light)
 
-  return orb
+  return group
 }
