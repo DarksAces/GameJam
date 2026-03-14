@@ -92,8 +92,7 @@ dist
 
 # Gatsby files
 .cache/
-# Comment the next line if you want to check your resources into your repo
-public
+
 
 # vue-cli build objects
 dist
