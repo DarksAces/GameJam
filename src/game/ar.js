@@ -44,6 +44,15 @@ export async function initAR(container, { onCapture, onTargetFound }) {
     orbGroup.userData.baseY = orbGroup.position.y
     orbGroup.userData.phase = Math.random() * Math.PI * 2
     
+    // Nueva velocidad solicitada por el usuario
+    orbGroup.userData.velocity = new THREE.Vector3(
+      (Math.random() - 0.5) * 0.015,
+      (Math.random() - 0.5) * 0.015,
+      (Math.random() - 0.5) * 0.015
+    )
+    // Tiempo de vida para evitar saturación (4 segundos)
+    orbGroup.userData.expiresAt = Date.now() + 4000
+    
     anchor.group.add(orbGroup)
     orbs.push(orbGroup)
     playSpawn()
@@ -114,11 +123,29 @@ export async function initAR(container, { onCapture, onTargetFound }) {
     }
 
     if (targetFoundTriggered) {
-      orbs.forEach((orb) => {
-        // Bobbing
-        orb.position.y = orb.userData.baseY + Math.sin(time * 0.002 + orb.userData.phase) * 0.05
-        orb.rotation.y += 0.02
-      })
+      const now = Date.now();
+      for (let i = orbs.length - 1; i >= 0; i--) {
+        const orb = orbs[i];
+
+        // Auto-eliminación tras expirar
+        if (now > orb.userData.expiresAt) {
+          anchor.group.remove(orb);
+          orbs.splice(i, 1);
+          continue;
+        }
+
+        // Aplicar movimiento
+        orb.position.add(orb.userData.velocity);
+
+        // Rebotes en límites
+        const bounds = { x: 1.2, y: 1.0, z: 0.8 };
+        if (Math.abs(orb.position.x) > bounds.x) orb.userData.velocity.x *= -1;
+        if (Math.abs(orb.position.y) > bounds.y) orb.userData.velocity.y *= -1;
+        if (orb.position.z < 0.1 || orb.position.z > bounds.z) orb.userData.velocity.z *= -1;
+
+        orb.rotation.y += 0.02;
+        orb.rotation.x += 0.01;
+      }
     }
     renderer.render(scene, camera)
   })
