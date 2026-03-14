@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { initAR, stopAR, arState } from './game/ar'
-import { playAmbient, stopAmbient } from './game/audio'
+import { playAmbient, stopAmbient, toggleAmbient, isAmbientActive } from './game/audio'
 import { saveHighScore } from './services/firebase'
 import LoginModal from './components/LoginModal'
 import LobbyScreen from './components/LobbyScreen'
@@ -148,13 +148,16 @@ function MenuScreen({ onStart }) {
   )
 }
 
-function HUD({ score, timeLeft }) {
+function HUD({ score, timeLeft, isMusicPlaying, onMusicToggle }) {
   return (
     <>
       <div className="hud">
         <div className="hud-box">⬡ {score}</div>
         <div className={`hud-box ${timeLeft <= 10 ? 'danger' : ''}`}>
           {timeLeft}s
+        </div>
+        <div className="hud-box music-control" onClick={onMusicToggle}>
+          {isMusicPlaying ? '🔊' : '🔇'}
         </div>
       </div>
       <div className="hint">toca los orbes para capturarlos</div>
@@ -190,6 +193,7 @@ export default function App() {
   const [activeMessage, setActiveMessage] = useState("")
   const [activeEffect, setActiveEffect] = useState(null) // 'green' | 'shake'
   const [catMinigame, setCatMinigame] = useState(false)
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false)
   
   const scoreRef = useRef(0)
   const multiplierRef = useRef(1)
@@ -199,6 +203,7 @@ export default function App() {
     console.log("🏁 Juego terminado. Puntuación final:", finalScore);
     stopAR()
     stopAmbient()
+    setIsMusicPlaying(false)
     setGameState('gameover')
 
     // Save high score automatically
@@ -222,6 +227,7 @@ export default function App() {
     stopAR()
     stopAmbient()
     playAmbient()
+    setIsMusicPlaying(true)
     await initAR(containerRef.current, {
       onCapture: (points, type) => {
         // Lógica de puntos básica
@@ -285,6 +291,11 @@ export default function App() {
     setGameState('lobby');
   };
 
+  const handleMusicToggle = () => {
+    const playing = toggleAmbient()
+    setIsMusicPlaying(playing)
+  };
+
   // Countdown timer
   useEffect(() => {
     if (gameState !== 'playing' || !isMatchStarted) return
@@ -337,7 +348,7 @@ export default function App() {
         />
       )}
 
-      {gameState === 'playing' && <HUD score={score} timeLeft={timeLeft} />}
+      {gameState === 'playing' && <HUD score={score} timeLeft={timeLeft} isMusicPlaying={isMusicPlaying} onMusicToggle={handleMusicToggle} />}
 
       {!isMatchStarted && gameState === 'playing' && (
         <div className="target-hint">Encuadra tu cara para empezar</div>

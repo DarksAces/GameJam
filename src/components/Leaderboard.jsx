@@ -17,7 +17,7 @@ export default function Leaderboard({ onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal-content leaderboard-modal">
-        <h2>Clasificaciones</h2>
+        <h2></h2>
         
         {loading ? (
           <p>Cargando ranking...</p>

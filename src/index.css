@@ -68,6 +68,23 @@ body {
   animation: pulse 0.5s ease-in-out infinite alternate;
 }
 
+.hud-box.music-control {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  font-size: 1.3rem;
+  padding: 0.3rem 0.8rem;
+}
+
+.hud-box.music-control:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 12px var(--cyan), inset 0 0 12px rgba(0, 255, 255, 0.1);
+}
+
+.hud-box.music-control:active {
+  transform: scale(0.95);
+}
+
 @keyframes pulse {
   from { opacity: 1; }
   to   { opacity: 0.5; }
