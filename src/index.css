@@ -131,6 +131,10 @@ body {
   box-shadow: 0 0 12px var(--magenta), inset 0 0 12px rgba(255, 0, 255, 0.05);
   transition: all 0.15s ease;
   pointer-events: all;
+  /* New properties from the change */
+  transition: transform 0.2s, background 0.2s;
+  font-weight: bold;
+  letter-spacing: 1px;
 }
 
 .btn:hover,
@@ -156,4 +160,97 @@ body {
 @keyframes fadeInOut {
   0%, 100% { opacity: 0.2; }
   50%       { opacity: 0.8; }
+}
+
+/* ─── Login Modal ─── */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(5px);
+  pointer-events: all;
+}
+
+.modal-content {
+  background: #1a1a2e;
+  padding: 2.5rem;
+  border-radius: 20px;
+  border: 4px solid var(--magenta);
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  pointer-events: all;
+  box-shadow: 0 0 30px var(--magenta);
+}
+
+.modal-content h2 {
+  color: var(--cyan);
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.login-form input {
+  padding: 12px 20px;
+  border-radius: 5px;
+  border: 1px solid var(--cyan);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1.1rem;
+  outline: none;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.modal-actions .btn {
+  flex: 1;
+  padding: 0.8rem;
+}
+
+.btn-secondary {
+  border-color: #4a4a8a;
+  color: #4a4a8a;
+  box-shadow: none;
+}
+
+.error-message {
+  color: #ff3333;
+  font-size: 0.85rem;
+}
+
+/* ─── Lobby Screen ─── */
+.lobby-screen {
+  background: radial-gradient(circle at center, #1a1a2e 0%, #0f0f1a 100%);
+}
+
+.lobby-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+.btn-main {
+  font-size: 1.2rem;
+  padding: 1.2rem;
 }

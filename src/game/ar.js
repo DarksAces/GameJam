@@ -23,12 +23,13 @@ export async function initAR(container, { onCapture }) {
   dirLight.position.set(0, 1, 1)
   scene.add(dirLight)
 
-  const anchor = mindarThree.addAnchor(0)
+  const anchor = mindarThree.addAnchor(1)  // Frente para face tracking
 
   // --- Spawn de orbes ---
   const spawnOrb = () => {
     if (orbs.length >= 6) return
     const orb = createOrb()
+    orb.userData.points = orb.userData.points || 1  // Asegura que tenga puntos definidos
     // Posiciones aleatorias alrededor del target
     orb.position.set(
       (Math.random() - 0.5) * 1.2,
@@ -65,10 +66,12 @@ export async function initAR(container, { onCapture }) {
       }
       const idx = orbs.indexOf(target)
       if (idx > -1) {
+        console.log('🎯 Orbe capturado! Puntos:', target.userData.points)
         anchor.group.remove(target)
         orbs.splice(idx, 1)
         playCapture()
-        callbacks.onCapture?.()
+        console.log('📞 Llamando callback con puntos:', target.userData.points)
+        callbacks.onCapture?.(target.userData.points)  // ← Ahora SÍ pasa los puntos
       }
     }
   }
