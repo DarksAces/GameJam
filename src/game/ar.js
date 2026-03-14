@@ -1,5 +1,5 @@
-import * as THREE from 'three'
-import { MindARThree } from 'mindar-image-three'
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js'
+import { MindARThree } from 'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js'
 import { createOrb } from './createOrb'
 import { playCapture, playSpawn } from './audio'
 

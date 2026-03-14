@@ -1,4 +1,4 @@
-import * as THREE from 'three'
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js'
 
 const COLORS = [0x00ffff, 0xff00ff, 0xffff00, 0x00ff88, 0xff6600]
 
