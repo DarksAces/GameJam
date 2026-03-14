@@ -18,7 +18,7 @@ export default function Leaderboard({ onClose }) {
     <div className="modal-overlay">
       <div className="modal-content leaderboard-modal">
         <h2></h2>
-        
+
         {loading ? (
           <p>Cargando ranking...</p>
         ) : (
@@ -29,7 +29,7 @@ export default function Leaderboard({ onClose }) {
               <span>Puntos</span>
             </div>
             {scores.length === 0 ? (
-              <p style={{marginTop: '1rem'}}>No hay puntajes aún</p>
+              <p style={{ marginTop: '1rem' }}>No hay puntajes aún</p>
             ) : (
               scores.map((entry, index) => (
                 <div key={index} className="ranking-row">
@@ -42,7 +42,7 @@ export default function Leaderboard({ onClose }) {
           </div>
         )}
 
-        <button className="btn" style={{marginTop: '2rem'}} onClick={onClose}>
+        <button className="btn" style={{ marginTop: '2rem' }} onClick={onClose}>
           Cerrar
         </button>
       </div>
