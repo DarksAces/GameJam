@@ -23,7 +23,7 @@ export async function initAR(container, { onCapture }) {
   dirLight.position.set(0, 1, 1)
   scene.add(dirLight)
 
-  const anchor = mindarThree.addAnchor(0)
+  const anchor = mindarThree.addAnchor(1)  // Frente para face tracking
 
   // --- Spawn de orbes ---
   const spawnOrb = () => {
