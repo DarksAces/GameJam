@@ -7,7 +7,7 @@ import LobbyScreen from './components/LobbyScreen'
 import Leaderboard from './components/Leaderboard'
 import './index.css'
 
-// ─── Pantalla de inicio (Original) ─────────────────────────────────────────────
+// ─── Pantalla de inicio ───────────────────────────────────────────────────────
 function MenuScreen({ onStart }) {
   return (
     <div className="screen">
@@ -43,7 +43,7 @@ function GameOver({ score, onRestart, onExit }) {
       <p className="score-label">orbes capturados</p>
       <div className="modal-actions" style={{ pointerEvents: 'all' }}>
         <button className="btn btn-secondary" onClick={onExit}>Ver Lobby</button>
-        <button className="btn" onClick={onRestart}>Reiniciar</button>
+        <button className="btn" onClick={onRestart}>Jugar de nuevo</button>
       </div>
     </div>
   )
@@ -57,8 +57,9 @@ export default function App() {
   const [showLogin, setShowLogin] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [score, setScore] = useState(0)
-  const [timeLeft, setTimeLeft] = useState(60)
-  const scoreRef = useRef(0) // Para tener el score actualizado dentro de callbacks de AR
+  const [timeLeft, setTimeLeft] = useState(120)
+  const [isMatchStarted, setIsMatchStarted] = useState(false)
+  const scoreRef = useRef(0)
 
   // Check for existing session
   useEffect(() => {
@@ -88,18 +89,23 @@ export default function App() {
   const handleStartGame = useCallback(async () => {
     setScore(0)
     scoreRef.current = 0
-    setTimeLeft(60)
+    setTimeLeft(120)
+    setIsMatchStarted(false)
     stopAR()
     stopAmbient()
     playAmbient()
     await initAR(containerRef.current, {
-      onCapture: () => {
+      onCapture: (points) => {
         setScore(s => {
-          const next = s + 1
+          const next = Math.max(0, s + (points || 1))
           scoreRef.current = next
           return next
         })
       },
+      onTargetFound: () => {
+        console.log("📱 App.jsx: Target Found recibido! Iniciando cronómetro.");
+        setIsMatchStarted(true);
+      }
     })
     setGameState('playing')
   }, [])
@@ -120,19 +126,20 @@ export default function App() {
 
   // Countdown timer
   useEffect(() => {
-    if (gameState !== 'playing') return
+    if (gameState !== 'playing' || !isMatchStarted) return
+    console.log("⏰ Cronómetro ACTIVADO - 120s empezando...");
     const interval = setInterval(() => {
       setTimeLeft(t => {
         if (t <= 1) {
           clearInterval(interval)
-          handleStop(scoreRef.current)  // ← score real
+          handleStop(scoreRef.current)
           return 0
         }
         return t - 1
       })
     }, 1000)
     return () => clearInterval(interval)
-  }, [gameState])
+  }, [gameState, isMatchStarted, handleStop])
 
   return (
     <>
@@ -151,6 +158,10 @@ export default function App() {
       )}
 
       {gameState === 'playing' && <HUD score={score} timeLeft={timeLeft} />}
+
+      {!isMatchStarted && gameState === 'playing' && (
+        <div className="target-hint">Encuadra tu cara para empezar</div>
+      )}
 
       {gameState === 'gameover' && (
         <GameOver
