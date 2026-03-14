@@ -60,11 +60,11 @@ export default function App() {
   const handleStart = useCallback(async () => {
     setScore(0)
     setTimeLeft(60)
-    setGameState('playing')
     playAmbient()
     await initAR(containerRef.current, {
       onCapture: (points) => setScore(s => Math.max(0, s + points)),
     })
+    setGameState('playing')
   }, [])
 
   // Countdown timer
