@@ -1,95 +1,98 @@
 import * as THREE from 'three'
+import { MindARThree } from 'mind-ar/dist/mindar-image-three.prod.js'
 import { createOrb } from './createOrb'
 import { playCapture, playSpawn } from './audio'
 
-let scene, camera, renderer, container
+let mindarThree = null
 let orbs = []
 let callbacks = {}
 let spawnInterval = null
 let isRunning = false
 
-export async function initAR(parentContainer, { onCapture }) {
+export async function initAR(container, { onCapture }) {
   callbacks.onCapture = onCapture
-  container = parentContainer
   isRunning = true
 
-  // --- Setup Three.js ---
-  scene = new THREE.Scene()
-  scene.background = new THREE.Color(0x050510) // Fondo oscuro espacial
+  mindarThree = new MindARThree({
+    container,
+    imageTargetSrc: 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind',
+  })
 
-  camera = new THREE.PerspectiveCamera(
-    75,
-    container.clientWidth / container.clientHeight,
-    0.1,
-    1000
-  )
-  camera.position.z = 5
+  const { renderer, scene, camera } = mindarThree
+  
+  // Fondo transparente para ver la cámara
+  renderer.setClearColor(0x000000, 0)
 
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-  renderer.setSize(container.clientWidth, container.clientHeight)
-  renderer.setPixelRatio(window.devicePixelRatio)
-  container.appendChild(renderer.domElement)
-
-  // --- Iluminación ---
-  scene.add(new THREE.AmbientLight(0xffffff, 0.4))
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8)
-  dirLight.position.set(5, 5, 5)
+  // Luces
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5))
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1)
+  dirLight.position.set(0, 0, 5)
   scene.add(dirLight)
 
-  // --- Spawn de orbes ---
+  // Anchor 0 (Ajustar cuando tengamos el .mind real)
+  const anchor = mindarThree.addAnchor(0)
+  
   const spawnOrb = () => {
-    if (!isRunning || orbs.length >= 15) return
+    if (!isRunning || orbs.length >= 20) return
     const orb = createOrb()
     
-    // Posiciones aleatorias frente a la cámara
+    // Posiciones aleatorias relativas al marcador
     orb.position.set(
-      (Math.random() - 0.5) * 6,
-      (Math.random() - 0.5) * 4,
-      Math.random() * -5 // Profundidad
+      (Math.random() - 0.5) * 1.5,
+      (Math.random() - 0.5) * 1.5,
+      Math.random() * 0.5
     )
     
-    orb.userData.baseY = orb.position.y
+    orb.userData.basePos = orb.position.clone()
     orb.userData.phase = Math.random() * Math.PI * 2
-    scene.add(orb)
+    
+    anchor.group.add(orb)
     orbs.push(orb)
     playSpawn()
   }
 
-  // Iniciamos spawn inmediatamente (o con el delay que quieras, pero aquí directo por simplicidad ahora)
-  console.log('Iniciando spawn de orbes...')
-  spawnOrb()
-  spawnInterval = setInterval(spawnOrb, 1500)
+  anchor.onTargetFound = () => {
+    console.log('🎯 Target detectado!')
+    if (!spawnInterval) {
+      spawnOrb()
+      spawnInterval = setInterval(spawnOrb, 1200)
+    }
+  }
+
+  anchor.onTargetLost = () => {
+    console.log('Target perdido')
+    clearInterval(spawnInterval)
+    spawnInterval = null
+  }
 
   // --- Raycasting para clicks ---
   const raycaster = new THREE.Raycaster()
   const mouse = new THREE.Vector2()
 
   const handlePointer = (e) => {
-    // Evitar que el evento se propague si es necesario
     const x = e.touches ? e.touches[0].clientX : e.clientX
     const y = e.touches ? e.touches[0].clientY : e.clientY
     
-    console.log('Click detectado en UI:', x, y)
-    
-    // Usar window.innerWidth/Height para mayor robustez en el cálculo de NDC
     mouse.x = (x / window.innerWidth) * 2 - 1
     mouse.y = -(y / window.innerHeight) * 2 + 1
 
     raycaster.setFromCamera(mouse, camera)
-    const hits = raycaster.intersectObjects(orbs, true)
+    const hits = raycaster.intersectObjects(anchor.group.children, true)
 
     if (hits.length > 0) {
+      // Encontrar el grupo que es el orbe
       let target = hits[0].object
       while (target.parent && !orbs.includes(target)) {
         target = target.parent
       }
+      
       const idx = orbs.indexOf(target)
       if (idx > -1) {
-        console.log('✅ ¡Orbe capturado!')
-        scene.remove(target)
+        console.log('✅ ¡Capturado!')
+        anchor.group.remove(target)
         orbs.splice(idx, 1)
         playCapture()
-        callbacks.onCapture?.()
+        callbacks.onCapture?.(target.userData.points)
       }
     }
   }
@@ -97,43 +100,32 @@ export async function initAR(parentContainer, { onCapture }) {
   window.addEventListener('mousedown', handlePointer)
   window.addEventListener('touchstart', handlePointer, { passive: true })
 
-  // --- Handle Resize ---
-  const handleResize = () => {
-    camera.aspect = container.clientWidth / container.clientHeight
-    camera.updateProjectionMatrix()
-    renderer.setSize(container.clientWidth, container.clientHeight)
-  }
-  window.addEventListener('resize', handleResize)
-
-  // --- Loop de animación ---
-  const animate = (time) => {
+  await mindarThree.start()
+  
+  renderer.setAnimationLoop((time) => {
     if (!isRunning) return
-    requestAnimationFrame(animate)
-
+    
     orbs.forEach((orb) => {
-      orb.position.y = orb.userData.baseY + Math.sin(time * 0.002 + orb.userData.phase) * 0.1
+      // Animación suave
+      orb.position.y = orb.userData.basePos.y + Math.sin(time * 0.003 + orb.userData.phase) * 0.05
       orb.rotation.y += 0.02
-      orb.rotation.x += 0.01
     })
-
+    
     renderer.render(scene, camera)
-  }
-  animate(0)
+  })
 
-  // Cleanup function stored for stopAR
   callbacks.cleanup = () => {
-    window.removeEventListener('resize', handleResize)
-    container.removeEventListener('mousedown', handlePointer)
-    container.removeEventListener('touchstart', handlePointer)
-    if (renderer.domElement && container.contains(renderer.domElement)) {
-      container.removeChild(renderer.domElement)
-    }
+    window.removeEventListener('mousedown', handlePointer)
+    window.removeEventListener('touchstart', handlePointer)
+    mindarThree.stop()
+    renderer.setAnimationLoop(null)
   }
 }
 
 export function stopAR() {
   isRunning = false
   clearInterval(spawnInterval)
+  spawnInterval = null
   if (callbacks.cleanup) callbacks.cleanup()
   orbs = []
 }

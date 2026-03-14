@@ -63,7 +63,7 @@ export default function App() {
     setGameState('playing')
     playAmbient()
     await initAR(containerRef.current, {
-      onCapture: () => setScore(s => s + 1),
+      onCapture: (points) => setScore(s => Math.max(0, s + points)),
     })
   }, [])
 
@@ -73,7 +73,6 @@ export default function App() {
     const interval = setInterval(() => {
       setTimeLeft(t => {
         if (t <= 1) {
-          clearInterval(interval)
           handleStop()
           return 0
         }

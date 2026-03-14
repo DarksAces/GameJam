@@ -40,7 +40,11 @@ body {
 .hud {
   display: flex;
   justify-content: space-between;
-  padding: 1.2rem 1.5rem;
+  padding: 2rem 2.5rem;
+  position: relative;
+  z-index: 100;
+  pointer-events: auto;
+  width: 100%;
 }
 
 .hud-box {
