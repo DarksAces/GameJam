@@ -40,10 +40,38 @@ function Muffins({ onMuffinClick }) {
 }
 
 function CatMinigame({ onComplete }) {
+  const [phase, setPhase] = useState('peeking') // 'peeking' | 'center'
   const [clicks, setClicks] = useState(0)
-  const [timeLeft, setTimeLeft] = useState(50)
+  const [timeLeft, setTimeLeft] = useState(60) // 6 segundos total para el centro
+  const [peekPos, setPeekPos] = useState({ side: 'left', offset: 50 })
+  const peeksRef = useRef(0)
 
+  // Fase de "asomarse"
   useEffect(() => {
+    if (phase !== 'peeking') return
+    
+    const interval = setInterval(() => {
+      peeksRef.current += 1
+      if (peeksRef.current >= 4) {
+        setPhase('center')
+        clearInterval(interval)
+        return
+      }
+      
+      const sides = ['top', 'bottom', 'left', 'right']
+      setPeekPos({
+        side: sides[Math.floor(Math.random() * sides.length)],
+        offset: Math.random() * 60 + 20
+      })
+    }, 800)
+
+    return () => clearInterval(interval)
+  }, [phase])
+
+  // Fase de rascar en el centro
+  useEffect(() => {
+    if (phase !== 'center') return
+    
     const timer = setInterval(() => {
       setTimeLeft(t => {
         if (t <= 0) {
@@ -53,28 +81,56 @@ function CatMinigame({ onComplete }) {
         return t - 1
       })
     }, 100)
+    
     return () => clearInterval(timer)
-  }, [clicks, onComplete])
+  }, [phase, clicks, onComplete])
 
-  const handleClick = (e) => {
+  const handleScratch = (e) => {
     e.stopPropagation()
+    if (phase !== 'center') return
+    
     setClicks(c => {
       const newC = c + 1
-      if (newC >= 15) {
-        onComplete(newC + Math.floor(timeLeft / 2))
+      if (newC >= 20) {
+        // Bonus basado en tiempo restante: cada segundo restante (10 decimas) da 5 puntos
+        const bonus = Math.floor(timeLeft / 2)
+        onComplete(25 + bonus)
       }
       return newC
     })
   }
 
+  const getPeekStyle = () => {
+    const { side, offset } = peekPos
+    const style = { visibility: phase === 'peeking' ? 'visible' : 'hidden' }
+    if (side === 'top') { style.top = '-20px'; style.left = `${offset}%`; style.transform = 'rotate(180deg)' }
+    if (side === 'bottom') { style.bottom = '-20px'; style.left = `${offset}%` }
+    if (side === 'left') { style.left = '-20px'; style.top = `${offset}%`; style.transform = 'rotate(90deg)' }
+    if (side === 'right') { style.right = '-20px'; style.top = `${offset}%`; style.transform = 'rotate(-90deg)' }
+    return style
+  }
+
   return (
     <div className="cat-minigame-overlay">
-      <div className="cat-visual" onClick={handleClick}>
-        <div className="cat-ears">/\_/\</div>
-        <div className="cat-face">( o.o )</div>
-        <div className="cat-belly">¡Ráscame!<br/>({Math.max(0, 15 - clicks)})</div>
-      </div>
-      <div className="cat-timer">Tiempo restante: {(timeLeft / 10).toFixed(1)}s</div>
+      {phase === 'peeking' && (
+        <div className="cat-peek" style={getPeekStyle()}>
+          /\_/\<br/>( o.o )
+        </div>
+      )}
+      
+      {phase === 'center' && (
+        <div className="cat-center-overlay">
+          <div className="cat-visual-center" onClick={handleScratch}>
+            /\_/\<br/>
+            ( {">"}.{">"} )<br/>
+            (  W  )
+          </div>
+          <div className="scratch-progress">
+            <div className="scratch-bar" style={{ width: `${(clicks / 20) * 100}%` }} />
+          </div>
+          <div className="scratch-hint">¡RÁSCAME RÁPIDO!</div>
+        </div>
+      )}
     </div>
   )
 }
@@ -124,7 +180,7 @@ function GameOver({ score, onRestart, onExit }) {
 // ─── App principal ────────────────────────────────────────────────────────────
 export default function App() {
   const containerRef = useRef(null)
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(() => localStorage.getItem('game_username'))
   const [gameState, setGameState] = useState('menu') // 'menu' | 'lobby' | 'playing' | 'gameover'
   const [showLogin, setShowLogin] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
@@ -137,17 +193,7 @@ export default function App() {
   
   const scoreRef = useRef(0)
   const multiplierRef = useRef(1)
-  const arStateRef = useRef({
-    paranoia: false,
-    speedMult: 1,
-    spawnRateMult: 1
-  })
 
-  // Check for existing session
-  useEffect(() => {
-    const savedName = localStorage.getItem('game_username');
-    if (savedName) setUser(savedName);
-  }, [setUser]);
 
   const handleStop = useCallback(async (finalScore) => {
     console.log("🏁 Juego terminado. Puntuación final:", finalScore);

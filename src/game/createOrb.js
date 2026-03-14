@@ -4,7 +4,7 @@ export const ORB_TYPES = [
   { type: 'BLUE',   icon: '💰', color: 0x00aaff, points: 1, weight: 60 },
   { type: 'RED',    icon: '💩', color: 0xff3333, points: 2, weight: 8 },
   { type: 'GREEN',  icon: '🌿', color: 0x33ff33, points: 5, weight: 8 },
-  { type: 'YELLOW', icon: '🫘', color: 0xffff33, points: 3, weight: 8 },
+  { type: 'YELLOW', icon: '☕', color: 0xffff33, points: 3, weight: 8 },
   { type: 'ORANGE', icon: '🐱', color: 0xffaa00, points: 0, weight: 4 }, // gato
 ]
 

@@ -224,7 +224,7 @@ body {
 
 .modal-actions .btn {
   flex: 1;
-  padding: 0.8rem;
+  padding: 1.2rem;
 }
 
 .btn-secondary {
@@ -254,4 +254,85 @@ body {
 .btn-main {
   font-size: 1.2rem;
   padding: 1.2rem;
+}
+
+/* ─── Cat Minigame ─── */
+.cat-minigame-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.cat-peek {
+  position: absolute;
+  font-size: 4rem;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  filter: drop-shadow(0 0 10px rgba(255, 170, 0, 0.5));
+  z-index: 2001;
+}
+
+.cat-center-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+  animation: fadeIn 0.3s ease;
+  z-index: 2002;
+}
+
+.cat-visual-center {
+  font-size: 8rem;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.05s;
+  text-align: center;
+  filter: drop-shadow(0 0 20px var(--yellow));
+}
+
+.cat-visual-center:active {
+  transform: scale(0.9);
+}
+
+.scratch-progress {
+  width: 280px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid var(--magenta);
+  margin-top: 2rem;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 15px var(--magenta);
+}
+
+.scratch-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--magenta), var(--cyan));
+  transition: width 0.1s ease;
+}
+
+.scratch-hint {
+  color: var(--cyan);
+  margin-top: 1.5rem;
+  font-size: 1.4rem;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-shadow: 0 0 10px var(--cyan);
+  animation: pulse 0.5s infinite alternate;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes push-in {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }

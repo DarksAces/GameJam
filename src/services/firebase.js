@@ -3,7 +3,6 @@ import { getAuth, signInAnonymously } from "firebase/auth";
 import {
   getFirestore,
   collection,
-  addDoc,
   getDocs,
   query,
   orderBy,

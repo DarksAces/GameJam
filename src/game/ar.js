@@ -126,7 +126,7 @@ export async function initAR(container, { onCapture, onTargetFound }) {
 
   await mindarThree.start()
 
-  renderer.setAnimationLoop((time) => {
+  renderer.setAnimationLoop(() => {
     if (!isRunning) return
     
     if (anchor.group.visible && !targetFoundTriggered) {
